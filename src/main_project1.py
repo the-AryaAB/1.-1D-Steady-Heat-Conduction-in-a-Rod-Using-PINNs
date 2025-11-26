@@ -7,6 +7,7 @@ from training.trainer import compute_loss
 from utils.data_sampling import sample_interior_points, boundary_points
 from utils.plotting import plot_theta
 from utils.config_loader import load_config
+from utils.plot_architecture import plot_network_architecture
 
 
 def main():
@@ -24,7 +25,7 @@ def main():
     N_f = config["problem"]["N_f"]
 
     # Network + training parameters
-    layers = config["network"]["layers"]          # e.g. [1, 20, 20, 20, 1]
+    layers = config["network"]["layers"]
     adam_lr = float(config["training"]["adam_lr"])
     adam_iters = config["training"]["adam_iters"]
     use_lbfgs = config["training"]["use_lbfgs"]
@@ -34,8 +35,8 @@ def main():
     print(f"Using device: {device}")
 
     # Sample collocation and boundary points
-    xi_f = sample_interior_points(N_f, device)   # interior points (0,1)
-    xi_b0, xi_b1 = boundary_points(device)       # boundary xi = 0, 1
+    xi_f = sample_interior_points(N_f, device)
+    xi_b0, xi_b1 = boundary_points(device)     
 
     # Build PINN model
     model = FullyConnectedPINN(layers).to(device)
@@ -92,7 +93,7 @@ def main():
     with torch.no_grad():
         theta_pred = model(xi_test).cpu().numpy()
 
-    # Analytical dimensionless solution: theta_exact(xi) = xi
+    # Analytical dimensionless solution
     theta_exact = xi_test_np
 
     # Dimensional temperature
@@ -107,8 +108,8 @@ def main():
     print(f"Relative L2 error (theta): {l2_rel_err:.3e}")
     print(f"Max abs error (theta):    {max_err:.3e}")
 
-    # Save results (optional but recommended)
-    root_dir = os.path.dirname(this_dir)  # go one level up: project root
+    # Save results
+    root_dir = os.path.dirname(this_dir)
     exp_dir = os.path.join(root_dir, "experiments")
     models_dir = os.path.join(exp_dir, "saved_models")
     results_dir = os.path.join(exp_dir, "results")
@@ -125,8 +126,18 @@ def main():
 
     print(f"Saved model to: {os.path.join(models_dir, 'heat1D_PINN.pt')}")
 
-    # 8. Plot results
-    plot_theta(xi_test_np, theta_exact, theta_pred, abs_err)
+    # Plot results and save figures
+    plot_theta(
+        xi_test_np,
+        theta_exact,
+        theta_pred,
+        abs_err,
+        L=L,
+        T_ref=T0,
+        T_scale=(T1 - T0),
+        x_start=0.0,
+    )    
+    plot_network_architecture()
 
 
 if __name__ == "__main__":

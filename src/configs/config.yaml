@@ -8,6 +8,6 @@ training:
 
 problem:
   N_f: 200
-  L: 1.0 # meters
+  L: 2.5 # meters
   T0: 100.0 # C
   T1: 300.0 # C

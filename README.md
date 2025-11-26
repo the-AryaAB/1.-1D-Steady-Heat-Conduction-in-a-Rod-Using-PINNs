@@ -1,91 +1,96 @@
+# 📘 **Project 1. Physics-Informed Neural Network (PINNs) Solution of         One-Dimensional Steady-State Heat Conduction in a homogeneous rod**
 
----
+This repository implements a **Physics-Informed Neural Network (PINN)** to solve the classical **1D steady-state heat conduction equation**.
+It includes:
 
-# **Project 1 — 1D Steady Heat Conduction in a rod Using Physics-Informed Neural Networks (PINNs)**
+* Full PINN implementation
+* Collocation point sampling
+* Automatic differentiation
+* Results and comparison with analytical solution
+* Error plots (nondimensional & dimensional)
+* Automatically generated **network architecture diagram**
+* A clean project structure suitable for research & academic work
 
-This repository contains a complete implementation of a **Physics-Informed Neural Network (PINN)** applied to the classical **1D steady-state heat conduction** problem.
-The project is part of a larger series of PINNs-based mini-projects aimed at building my research portfolio in **computational mechanics**, **scientific machine learning**.
+## 🔥 **Problem Overview**
 
+We consider a homogeneous rod of length:
+![problem](experiments/figures/problem_schematic.png)
 
+``` python
+L = 2.5 m
+```
 
-## **1. Problem Description**
+with fixed temperatures:
 
-We consider heat conduction in a 1D steady-state, homogeneous rod with no internal heat generation.
+``` pyton
+T(0) = 100°C
+T(L) = 300°C
+```
 
-> **Assumptions:**
-> * constant thermal conductivity: (k)
-> * steady state heat transfer
-> * no heat generation
-> * 1D
+### **Governing Equation**
 
-From the above assumptions, we can now simplify the Fourier's law of heat transfer to a single equation.The non-dimensionalizied form of the governing equations will be:
+Fourier’s law and the 1D energy balance yield:
 
 $$
-\theta(x) = \frac{T(x) - T_0}{T_1 - T_0}
+\frac{d^2 T}{dx^2} = 0
 $$
 
+### **Nondimensionalization**
+
 $$
-\xi = \frac{x}{L} \in [0,1]
+\xi = \frac{x}{L}, \qquad
+\theta = \frac{T - T_0}{T_1 - T_0}
 $$
+
+The nondimensional governing equation becomes:
 
 $$
 \frac{d^2 \theta}{d\xi^2} = 0
 $$
 
-### **Boundary Conditions**
+with boundary conditions:
 
 $$
-T(0) = T_0, \qquad T(L) = T_1.
+\theta(0)=0, \qquad \theta(1)=1
 $$
 
-as it means:
+The analytical solution:
 
 $$
-\theta(0) = 0, \qquad \theta(1) = 1.
+\theta(\xi) = \xi
 $$
 
-The analytical (dimensionless) solution is
-
 $$
-\theta_{\text{exact}}(\xi) = \xi
+T(x) = T_0 + (T_1 - T_0)\theta(\xi)
 $$
 
-### **Dimensional temperature reconstruction**
+## 🧠 **PINN Method Summary**
 
-Given dimensional boundary conditions $(T(0) = T_0)$ and $(T(L) = T_L)$,
+A fully-connected neural network learns the function $\theta(\xi)$ by minimizing:
 
-$$
-T(x) = T_0 + (T_L - T_0)\,\theta(\xi)
-$$
+* PDE residual loss
+* Boundary condition loss
 
+using **automatic differentiation** (PyTorch).
 
-## **2. Why Use PINNs?**
+Optimization uses:
 
-**Physics-Informed Neural Networks (PINNs)** are often used instead of **classical computational fluid dynamics (CFD)** when flexibility, data integration, or differentiability are important. Classical CFD requires meshing, which can struggle with complex or moving geometries, and often becomes computationally expensive for high-dimensional or inverse problems. PINNs, by contrast, embed the governing PDEs directly into the loss function of a **neural network**, allowing them to learn solutions without meshing and to naturally combine sparse or noisy experimental data with physical laws. They are particularly useful for inverse problems—such as discovering unknown parameters or reconstructing fields from limited measurements—because gradients are computed automatically via backpropagation. While PINNs are not yet a full replacement for high-fidelity CFD, they offer a more flexible, mesh-free, and data-compatible framework for many modern physics and engineering applications.
+* **Adam** (initial training)
+* **L-BFGS** (refinement)
 
-As a conclusion the benefits of utilizing PINNs on this problem can be mentioned as:
+No mesh or labeled data is needed.
 
-* No meshing required
-* Automatic differentiation computes derivatives
-* Smooth solutions
-* Extensible to:
+## 📂 **Project Structure**
 
-  * Variable conductivity
-  * Source terms
-  * Nonlinear PDEs
-  * Multi-dimensional domains
-
-This simple 1D case is the foundation for future PINN projects (Poisson, Navier–Stokes, etc.).
-
-
-## **3. Project Structure**
-
-```
-Project1-1D-Heat-Conduction-PINN/
+```bash
+Project1-root/
 │
-├── LICENSE.txt
 ├── README.md
+├── LICENSE
 ├── requirements.txt
+│
+├── docs/
+│   └── report_project1_heat1D.pdf
 │
 ├── src/
 │   ├── main_project1.py
@@ -94,48 +99,56 @@ Project1-1D-Heat-Conduction-PINN/
 │   │   └── fully_connected_pinn.py
 │   │
 │   ├── physics/
-│   │   ├── heat1D_PDE.py
+│   │   ├── heat1d_pde.py
 │   │   └── boundary_conditions.py
 │   │
 │   ├── training/
 │   │   └── trainer.py
 │   │
 │   ├── utils/
-│   │   ├── plotting.py
 │   │   ├── data_sampling.py
-│   │   └── config_loader.py
+│   │   ├── plotting.py
+│   │   ├── config_loader.py
+│   │   ├── plot_architecture.py
+│   │   └── __init__.py
 │   │
 │   └── configs/
 │       └── config.yaml
-├── docs/
-│   ├── report_project1_heat1D.pdf
-│   ├── report_project1_heat1D.tex
-│   ├── figures/
-│   │   ├── problem_setup.png
-│   │   ├── pinn_architecture.png
-│   │   ├── results_theta.png
-│   │   ├── results_error.png
-│   │   
-│   └── references.bib
 │
-└── experiments/
-    ├── logs/
-    ├── saved_models/
-    └── results/
+├── experiments/
+│   ├── results/
+│   │   ├── theta_pred.npy
+│   │   ├── theta_exact.npy
+│   │   ├── T_pred.npy
+│   │   └── T_exact.npy
+│   │
+│   ├── figures/
+│   │   ├── theta_comparison_dimensionless.png
+│   │   ├── theta_absolute_error_dimensionless.png
+│   │   ├── temperature_distribution_dimensional.png
+│   │   ├── temperature_absolute_error_dimensional.png
+│   │   └── network_architecture.png
+│   │
+│   └── saved_models/
+│       └── heat1d_pinn.pt
+│
+└── .gitignore
+
 ```
 
+## 🛠️ **Requirements**
 
-## **4. Installation**
+Install dependencies:
 
-### Install dependencies
+### **Using pip**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Requirements include:
+### requirements.txt should contain
 
-```
+```bash
 torch
 numpy
 matplotlib
@@ -144,84 +157,107 @@ tqdm
 scipy
 ```
 
+## ▶️ **How to Run**
 
-## **5. How to Run**
-
-From the project root directory:
+From project root:
 
 ```bash
-python src/main_project1.py
+cd src
+python main_project1.py
 ```
 
-Optional settings such as learning rate, network depth, number of collocation points, etc., can be modified in:
+Modify configuration inside:
 
-```
+```bash
 src/configs/config.yaml
 ```
 
-## **6. Results**
+## 📊 **Results**
 
-### Temperature Profile
+All figures are located in:
 
-A PINN learns the exact linear temperature distribution:
-
-$$
-\theta(\xi) = \xi
-$$
-
-### Error Analysis
-
-Typical results for default configuration parameters:
-
-* **Relative L2 Error:** ~1e-4
-* **Max Absolute Error:** ~1e-4 (after L-BFGS refinement)
-
-Plots generated:
-
-* PINN vs Analytical Solution
-* Absolute Error Distribution
-
-These results are stored in:
-
-```
-experiments/results/
+```bash
+experiments/figures/
 ```
 
+## **1. Neural Network Architecture**
 
-## **7. Theory Summary**
+![network\_architecture](experiments/figures/network_architecture.png)
 
-The PINN minimizes a composite loss function:
+This schematic is auto-generated from `config.yaml` and shows the number of neurons in each layer plus full connectivity.
 
-[
-\mathcal{L}
-= \underbrace{\frac{1}{N_f}\sum_{i=1}^{N_f} \left( \theta''(\xi_f^{(i)}) \right)^2}_{\text{PDE Loss}}
+## **2. Nondimensional Temperature: PINN vs Analytical**
 
-* \underbrace{
-  \frac{1}{2}\left[
-  (\theta(0)-0)^2 + (\theta(1)-1)^2
-  \right]}_{\text{Boundary Loss}}
-  ]
+![theta\_comparison](experiments/figures/theta_comparison_dimensionless.png)
 
-Where:
+The PINN solution matches the analytical solution almost perfectly.
+The curves overlap, confirming correct learning of the PDE physics.
 
-* Second derivatives computed via **automatic differentiation**
-* No data points needed — only physics and boundary conditions
+## **3. Nondimensional Absolute Error**
 
+![theta\_error](experiments/figures/theta_absolute_error_dimensionless.png)
 
-## 🧩 **8. Key PINN Components**
+The error stays below (10^{-5}), demonstrating excellent accuracy.
 
-### ✔ Neural Network Architecture
+## **4. Dimensional Temperature Distribution**
 
-* Fully connected MLP
-* Tanh activation
-* Xavier initialization
+![temp\_distribution](experiments/figures/temperature_distribution_dimensional.png)
 
-### ✔ Optimizers
+The dimensional reconstruction again yields a perfect match to the analytical linear temperature field.
 
-* Adam for fast convergence
-* L-BFGS for final refinement (common in PINNs)
+## **5. Absolute Dimensional Error**
 
-### ✔ Sampling
+![temp\_error](experiments/figures/temperature_absolute_error_dimensional.png)
 
-* Random interior collocation points
-* Exact boundary points
+Errors stay below (5 \times 10^{-3} , ^\circ\mathrm{C}) across the domain.
+
+## ✔ **Conclusion**
+
+The PINN successfully reproduces the analytical solution for 1D steady-state heat conduction  in a homogeneous rod with extremely small error.
+This validates PINNs as:
+
+* Mesh-free
+* Physics-driven
+* Highly accurate
+* Suitable for forward and inverse problems
+
+This project serves as a foundation for future PINN work involving:
+
+* Internal heat generation
+* Nonlinear thermal conductivity
+* 2D/3D heat transfer
+* Transient conduction
+* Coupled convection–diffusion equations
+* Inverse heat conduction problems
+
+## 📚 **References**
+
+```md
+[1] M. Raissi, P. Perdikaris, and G.E. Karniadakis,
+    "Physics-informed neural networks," JCP, 2019.
+
+[2] G.E. Karniadakis et al.,
+    "Physics-informed machine learning," Nature Reviews Physics, 2021.
+
+[3] F.P. Incropera et al.,
+    "Fundamentals of Heat and Mass Transfer," Wiley, 2011.
+```
+
+## 🤝 **Collaboration**
+
+If you'd like to collaborate on:
+
+* PINNs for advanced heat transfer
+* Scientific machine learning
+* CFD + ML hybrid methods
+* Expanded PINN project series
+
+Feel free to reach out!
+
+## 📬 Contact
+
+Feel free to reach out through any of the platforms below:
+
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:arya.abdollahi.t@gmail.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/arya-abdollahi/)
+[![Telegram](https://img.shields.io/badge/Telegram-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/the_AryaAB)
